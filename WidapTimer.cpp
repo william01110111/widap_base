@@ -24,7 +24,7 @@ void WidapTimer::waitUntil(double timeToWait, bool resetAfter)
 	update();
 	
 	if (resetAfter)
-		reset();
+		baseTime=lastCheck;
 	
 	//vv this would keep the timer from slowly slipping when reset but there is a glitch with partial seconds so don't enable vv
 	//lastCheck.tv_sec=baseTime.tv_sec+(int)timeToWait;
@@ -38,7 +38,7 @@ void WidapTimer::waitFor(double timeToWait, bool resetAfter)
 	update();
 	
 	if (resetAfter)
-		reset();
+		baseTime=lastCheck;
 }
 
 void WidapTimer::update(bool reset)
@@ -46,7 +46,7 @@ void WidapTimer::update(bool reset)
 	clock_gettime(CLOCK_REALTIME, &lastCheck);
 	
 	if (reset)
-		this->reset();
+		baseTime=lastCheck;
 }
 
 double WidapTimer::checkTime()

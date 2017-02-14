@@ -196,22 +196,22 @@ inline double grdnt(double inpt, double strtI, double endI, double strtO, double
 
 inline double clamp(double inpt, double low, double hgh)
 {
-	if (inpt<low)
-		inpt=low;
+	if (inpt>=low && inpt<=hgh)
+		return inpt;
 	else if (inpt>hgh)
-		inpt=hgh;
-
-	return inpt;
+		return hgh;
+	else
+		return low;
 }
 
 inline int clamp(int inpt, double low, double hgh)
 {
-	if (inpt<low)
-		inpt=low;
+	if (inpt>=low && inpt<=hgh)
+		return inpt;
 	else if (inpt>hgh)
-		inpt=hgh;
-
-	return inpt;
+		return hgh;
+	else
+		return low;
 }
 
 inline double drand(double low, double hgh)

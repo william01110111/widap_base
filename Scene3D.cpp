@@ -1,7 +1,9 @@
 #include "Scene3D.h"
+#include <limits.h>
 
 Scene3D::Scene3D()
 {
+	triCount=0;
 	triStart=0;
 	
 	renderImage=0;
@@ -21,7 +23,7 @@ Scene3D::Scene3D()
 
 Scene3D::~Scene3D()
 {
-	if (zBuffer)
+	if (zBufferLng)
 		delete[] zBuffer;
 	
 	clearTriList();
@@ -50,14 +52,6 @@ void Scene3D::setRenderImage(WidapImage * newImg)
 	}
 }
 
-/*void Scene3D::setCamRot(double rotX, double rotZ)
-{
-	camRotX=rotX;
-	camRotZ=rotZ;
-	
-	lightVctr=Vctr3<double>(sin(deg2rad(camRotX))*sin(deg2rad(camRotZ)), -sin(deg2rad(camRotX))*cos(deg2rad(camRotZ)), cos(deg2rad(camRotX)));
-}*/
-
 void Scene3D::addTriangle(Vctr3<double> vert0, Vctr3<double> vert1, Vctr3<double> vert2, RGBpix color, bool shadeless)
 {
 	Triangle * ptr=triStart;
@@ -68,6 +62,7 @@ void Scene3D::addTriangle(Vctr3<double> vert0, Vctr3<double> vert1, Vctr3<double
 	triStart->color=color;
 	triStart->shadeless=shadeless;
 	triStart->nxt=ptr;
+	triCount++;
 }
 
 void Scene3D::addPipe(Vctr3<double> start, Vctr3<double> end, double rds, int sections, int cap, RGBpix color, bool shadeless, int divisions)
@@ -172,13 +167,22 @@ void Scene3D::addText(const char * text, Vctr3<double> start, double size, doubl
 void Scene3D::clearTriList()
 {
 	Triangle * ptr;
+	int counter=0;
 	
 	while (triStart)
 	{
 		ptr=triStart->nxt;
 		delete triStart;
 		triStart=ptr;
+		++counter;
 	}
+	
+	if (counter!=triCount)
+	{
+		std::cerr << "Scene3D::clearTriList(): when clearing tri list, there were " << counter << " triangles but triCount was " << triCount << "\n";
+	}
+	
+	triCount=0;
 }
 
 void Scene3D::render()
@@ -199,6 +203,9 @@ void Scene3D::render()
 	if (!(cam->dim.x*cam->dim.y))
 		return;
 	
+	//set the light to move with the camera
+	lightVctr=Vctr3<double>(sin(deg2rad(cam->rot.x))*sin(deg2rad(cam->rot.z)), -sin(deg2rad(cam->rot.x))*cos(deg2rad(cam->rot.z)), cos(deg2rad(cam->rot.x)));
+	
 	for (i=0; i<zBufferLng; i++)
 	{
 		zBuffer[i]=INFINITY;
@@ -208,30 +215,83 @@ void Scene3D::render()
 	
 	while (tri)
 	{
-		if (tri->shadeless)
-		{ //make shadeless
+		if (tri->verts[0]==tri->verts[1] || tri->verts[1]==tri->verts[2] || tri->verts[2]==tri->verts[0])
+		{
 			
-			color=tri->color;
 		}
-		
 		else
-		{ //shade based on the light
+		{
+			if (tri->shadeless)
+			{ //make shadeless
+				
+				color=tri->color;
+			}
 			
-			brightness=clamp(grdnt(fabs(rad2deg(Vctr3<double>::cross(tri->verts[1]-tri->verts[0], tri->verts[2]-tri->verts[0]).ang(lightVctr))-90), -45, 90, 0, 1), 0, 1);
-			color.r=tri->color.r*brightness;
-			color.g=tri->color.g*brightness;
-			color.b=tri->color.b*brightness;
+			else
+			{ //shade based on the light
+				
+				brightness=clamp(grdnt(fabs(rad2deg(Vctr3<double>::cross(tri->verts[1]-tri->verts[0], tri->verts[2]-tri->verts[0]).ang(lightVctr))-90), -45, 90, 0, 1), 0, 1);
+				color.r=tri->color.r*brightness;
+				color.g=tri->color.g*brightness;
+				color.b=tri->color.b*brightness;
+			}
+			
+			
+			//renderImage->triangle(mapOrthoPoint(tri->verts[0]), mapOrthoPoint(tri->verts[1]), mapOrthoPoint(tri->verts[2]), tri->color, 0.5);
+			
+			if (cam->prsp)
+				renderTri(mapPrspPoint(tri->verts[0]), mapPrspPoint(tri->verts[1]), mapPrspPoint(tri->verts[2]), color);
+			else
+				renderTri(mapOrthoPoint(tri->verts[0]), mapOrthoPoint(tri->verts[1]), mapOrthoPoint(tri->verts[2]), color);
 		}
-		
-		
-		//renderImage->triangle(mapOrthoPoint(tri->verts[0]), mapOrthoPoint(tri->verts[1]), mapOrthoPoint(tri->verts[2]), tri->color, 0.5);
-		
-		if (cam->prsp)
-			renderTri(mapPrspPoint(tri->verts[0]), mapPrspPoint(tri->verts[1]), mapPrspPoint(tri->verts[2]), color);
-		else
-			renderTri(mapOrthoPoint(tri->verts[0]), mapOrthoPoint(tri->verts[1]), mapOrthoPoint(tri->verts[2]), color);
 		
 		tri=tri->nxt;
+	}
+}
+
+void Scene3D::zComposite(Scene3D * otherScene, double alpha)
+{
+	WidapImage * othrImg=otherScene->getRenderImage();
+	float * othrZBuffer=otherScene->getZBuffer();
+	int i;
+	
+	if (!renderImage || !othrImg || renderImage->getWdth()*renderImage->getHght()!=zBufferLng || zBufferLng!=otherScene->getZBufferLng())
+		return;
+	
+	if (alpha==1)
+	{
+		for (i=0; i<zBufferLng; ++i)
+		{
+			if (othrZBuffer[i]<zBuffer[i])
+			{
+				renderImage->bits[i]=othrImg->bits[i];
+				zBuffer[i]=othrZBuffer[i];
+			}
+		}
+	}
+	else if (alpha==0) //add
+	{
+		for (i=0; i<zBufferLng; ++i)
+		{
+			if (othrZBuffer[i]<zBuffer[i])
+			{
+				renderImage->bits[i].r=clamp(renderImage->bits[i].r+othrImg->bits[i].r, 0, 255);
+				renderImage->bits[i].g=clamp(renderImage->bits[i].g+othrImg->bits[i].g, 0, 255);
+				renderImage->bits[i].b=clamp(renderImage->bits[i].b+othrImg->bits[i].b, 0, 255);
+				zBuffer[i]=othrZBuffer[i];
+			}
+		}
+	}
+	else
+	{
+		for (i=0; i<zBufferLng; ++i)
+		{
+			if (othrZBuffer[i]<zBuffer[i])
+			{
+				blend(renderImage->bits+i, othrImg->bits[i], alpha);
+				zBuffer[i]=othrZBuffer[i];
+			}
+		}
 	}
 }
 

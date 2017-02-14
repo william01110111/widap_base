@@ -41,13 +41,13 @@ public:
 private:
 	
 	WidapTimer tmr;
-	static const double timeoutTime=1.0; //time (seconds) after which if the program has received no packets, it reports  no connection
+	static constexpr double timeoutTime=1.0; //time (seconds) after which if the program has received no packets, it reports  no connection
 	static const int headerLng=15; //the header I put on and take off
-	char *internalData;
+	char *internalData; //the data to send or receive
 	char *data; //points to internalData+headerLng, the data without the internal header
 	int lastSentConfirmNum, lastReceiveConfirmNum; //I can get away with a number rather then a list of confirmed packets because the next packet is not sent until the previous one is confirmed
 	bool waitingForConfirm;
-	static const double checkForConfirmInterval=0.05; //amount of time to wait in between checking for confirmation
+	static constexpr double checkForConfirmInterval=0.05; //amount of time to wait in between checking for confirmation
 	static const int resendFrequency=10; //how many loops to go through in between resends
 	char addressString[32]; //used to copy addresses to before returning them
 	

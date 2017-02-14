@@ -29,7 +29,10 @@ public:
 	Scene3D();
 	~Scene3D();
 	
+	int getTriCount() {return triCount;}
 	float * getZBuffer() {return zBuffer;}
+	int getZBufferLng() {return zBufferLng;}
+	WidapImage * getRenderImage() {return renderImage;}
 	
 	void setRenderImage(WidapImage * newImg);
 	//void setCamRot(double camRotX, double camRotZ);
@@ -47,6 +50,8 @@ public:
 	void addText(const char * text, Vctr3<double> start, double size, double weight, RGBpix color, bool shadeless);
 	
 	void render();
+	void zComposite(Scene3D * otherScene, double alpha); //composites two scenes together (both must already be rendered an the same size)
+	
 	Vctr3<double> mapOrthoPoint(Vctr3<double> a); //returned value is in screen cords
 	Vctr3<double> mapPrspPoint(Vctr3<double> a); //returned value is in screen cords
 	
@@ -57,6 +62,7 @@ public:
 	
 private:
 	
+	int triCount; //number of triangles in the scene
 	Triangle * triStart; //the start of the linked list
 	
 	//double camRotX, camRotZ, camScale;

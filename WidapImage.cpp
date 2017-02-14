@@ -1767,7 +1767,10 @@ RGBpix* WidapImage::pix(XYint loc)
 	if (loc.x>=dim.x || loc.y>=dim.y)
 	{
 		std::cout << std::endl << ">> tried to access outside of image <<" << std::endl;
-		return (bits+clamp((int)loc.x, 0, dim.x)+clamp((int)loc.y, 0, dim.y)*dim.x);
+		
+		if (dim.x && dim.y)
+			return (bits+clamp((int)loc.x, 0, dim.x-1)+clamp((int)loc.y, 0, dim.y-1)*dim.x);
+		else return 0;
 	}
 	else
 	{
@@ -2617,6 +2620,12 @@ void WidapImage::save(const char* filenameInpt)
 	char filename[256];
 	FILE *fp; //file pointer
 	
+	if (!bits)
+	{
+		std::cout << ">> tried to save empty image <<" << std::endl;
+		return;
+	}
+	
 	strcpy(filename, filenameInpt);
 	
 	if (dim.x!=(dim.x/4)*4 || dim.y!=(dim.y/4)*4)
@@ -2649,15 +2658,15 @@ void WidapImage::save(const char* filenameInpt)
 	
 	if (fp==NULL) //error
 	{
-		std::cout << std::endl << ">> Failed to save image! <<" << std::endl;
+		std::cout << std::endl << ">> Failed to save image '" << filename << "'! <<" << std::endl;
 	}
 	
 	else
 	{
 		if (!fwrite(header, 1, 54, fp) || !fwrite(bits, 1, dim.x*dim.y*3, fp))
 			std::cout << ">> file error <<" << std::endl;
+		
+		fclose(fp);
 	}
-	
-	fclose(fp);
 }
 

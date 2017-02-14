@@ -60,6 +60,18 @@ public:
 	}
 	
 	template<typename T0>
+	bool operator== (const Vctr3<T0>& inpt)
+	{
+		return x==inpt.x && y==inpt.y && z==inpt.z;
+	}
+	
+	template<typename T0>
+	bool operator!= (const Vctr3<T0>& inpt)
+	{
+		return x!=inpt.x || y!=inpt.y || z!=inpt.z;
+	}
+	
+	template<typename T0>
 	void operator= (const Vctr3<T0>& inpt)
 	{
 		x=inpt.x;

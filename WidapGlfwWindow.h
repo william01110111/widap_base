@@ -1,19 +1,29 @@
 #pragma once
 
 #include "WidapWindowBase.h"
-#include <SFML/Graphics.hpp>
+#include <GLFW/glfw3.h>
 
-/**linker settings
--lsfml-graphics
--lsfml-window
--lsfml-system
+/** linker options that work
+-lglfw3
+-lGLEW
+-lGL
+-lX11
+-lXxf86vm
+-lXrandr
+-lXi
+-lpthread
+-lXinerama
+-lXcursor
+-lrt
+-ldl
 **/
 
-class WidapSfmlWindow : public WidapWindowBase
+
+class WidapGlfwWindow : public WidapWindowBase
 {
 public:
-	WidapSfmlWindow(); //constructor
-	~WidapSfmlWindow(); //destructor
+	WidapGlfwWindow(); //constructor
+	~WidapGlfwWindow(); //destructor
 	
 	void open(int newWdth, int newHght, const char * name);
 	
@@ -28,19 +38,16 @@ public:
 	
 	void display();
 	void checkInput();
-	void close() {windowObj.close();}
+	void close();
 	
-	sf::RenderWindow * getWindowObj() {return &windowObj;}
+	GLFWwindow * getWindowObj() {return windowObj;}
 	
 private:
-	sf::RenderWindow windowObj;
+	GLFWwindow * windowObj;
 	
-	static bool firstInstance;
-	static sf::Font font;
-	static char key2char[127];
-	
-	RGBApix *dataRGBA;
-	sf::Texture texture;
+	static bool firstInstance, error;
+	//static char key2char[127];
 	
 	void windowResize();
 };
+

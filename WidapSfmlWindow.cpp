@@ -1,4 +1,5 @@
 #include "WidapSfmlWindow.h"
+#include <iostream>
 
 bool WidapSfmlWindow::firstInstance=1;
 sf::Font WidapSfmlWindow::font;
@@ -14,24 +15,20 @@ char WidapSfmlWindow::key2char[127];
 WidapSfmlWindow::WidapSfmlWindow()
 { //constructor
 	
-	keyPressNum=0;
-	keyPressListPos=0;
-	mouseLoc=mkXY(0, 0);
-	mouseLocDlta=mkXY(0, 0);
-	windowHasFocus=0;
-	windowIsOpen=0;
 	dataRGBA=0;
-	dim=mkXY(0, 0);
-	setLoc(mkXY(0, 0));
 	
 	if (firstInstance)
 	{
-		if (!font.loadFromFile("/usr/share/fonts/truetype/ubuntu-font-family/UbuntuMono-R.ttf"))
-		//if (!font.loadFromFile("/usr/share/fonts/truetype/freefont/FreeMono.ttf"))
+		if
+		(
+			!font.loadFromFile("/usr/share/fonts/truetype/ubuntu-font-family/UbuntuMono-R.ttf") &&
+			!font.loadFromFile("/usr/share/fonts/truetype/freefont/FreeMono.ttf") &&
+			!font.loadFromFile("/usr/share/fonts/TTF/DejaVuSans.ttf")
+		)
 		{
 			std::cout << ">> font failed to load <<\n";
 		}
-
+		
 		int i;
 
 		for (i=0; i<127; ++i)
@@ -72,12 +69,13 @@ WidapSfmlWindow::WidapSfmlWindow()
 	}
 }
 
+/*
 WidapSfmlWindow::WidapSfmlWindow(int newWdth, int newHght, const char * name)
 { //constructor
 	
 	WidapSfmlWindow();
 	open(newWdth, newHght, name);
-}
+}*/
 
 WidapSfmlWindow::~WidapSfmlWindow()
 {
@@ -101,32 +99,6 @@ void WidapSfmlWindow::open(int newWdth, int newHght, const char * name)
 	windowHasFocus=windowIsOpen;
 	
 	update();
-}
-
-char WidapSfmlWindow::nextKey()
-{
-	if (keyPressListPos<keyPressNum)
-	{
-		++keyPressListPos;
-		return keyPresses[keyPressListPos-1];
-	}
-	else
-	{
-		keyPressListPos=0;
-		return 0;
-	}
-}
-
-char WidapSfmlWindow::lastKey()
-{
-	if (keyPressNum)
-	{
-		return keyPresses[keyPressNum-1];
-	}
-	else
-	{
-		return 0;
-	}
 }
 
 void WidapSfmlWindow::clrFill(RGBpix clr, double alpha)
@@ -195,7 +167,7 @@ void WidapSfmlWindow::line(XYint a, XYint b, int thick, RGBpix clr)
 	//circle(b, thick/2, ::clr(0, 0, 0), 0.5);
 }
 
-void WidapSfmlWindow::text(char txt, double pixHgh, RGBpix clr, double weight)
+void WidapSfmlWindow::rndrText(char txt, double pixHgh, RGBpix clr, double weight)
 {
 	int lineThick, pixWde; //thickness of the lines and number of pixels each char is wide
 	const double oversize=1.5; //how much we should oversize each char
@@ -231,24 +203,7 @@ void WidapSfmlWindow::text(char txt, double pixHgh, RGBpix clr, double weight)
 	}
 }
 
-void WidapSfmlWindow::text(const char * txt, double pixHgh, RGBpix clr, double weight)
-{ //draws text
-	
-	int i=0;
-	
-	const int MAX_LNG=2048; //max text length, stops non terminated strings from crashing everything
-	
-	while (txt[i]!=0 && i<MAX_LNG)
-	{
-		text(txt[i], pixHgh, clr, weight);
-		
-		++i;
-	}
-	if (i==MAX_LNG)
-		std::cout << ">> string sent to WidapImage::text() was not terminated before position " << MAX_LNG << "<<\n";
-}
-
-void WidapSfmlWindow::trnsfrFromImg(WidapImage* source, XYint targetLoc)
+void WidapSfmlWindow::trnsfrFromImg(WidapImage* source, Vctr2<int> targetLoc)
 { //transfers an image onto the window
 	XYint imgDim;
 	int pixCount;
@@ -298,13 +253,6 @@ void WidapSfmlWindow::trnsfrFromImg(WidapImage* source, XYint targetLoc)
 	sprite.setPosition(sf::Vector2f(targetLoc.x, dim.y-targetLoc.y-imgDim.y));
 	
 	windowObj.draw(sprite);
-}
-
-void WidapSfmlWindow::update()
-{
-	display();
-	
-	checkInput();
 }
 
 void WidapSfmlWindow::display()
@@ -407,15 +355,20 @@ void WidapSfmlWindow::checkInput()
 	sf::Vector2i mouseVctr=sf::Mouse::getPosition();
 	sf::Vector2i windowVctr=windowObj.getPosition();
 	
+	shiftDwnBool=sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) || sf::Keyboard::isKeyPressed(sf::Keyboard::RShift);
+	ctrlDwnBool=sf::Keyboard::isKeyPressed(sf::Keyboard::LControl) || sf::Keyboard::isKeyPressed(sf::Keyboard::RControl);
+	altDwnBool=sf::Keyboard::isKeyPressed(sf::Keyboard::LAlt) || sf::Keyboard::isKeyPressed(sf::Keyboard::RAlt);
+	superDwnBool=sf::Keyboard::isKeyPressed(sf::Keyboard::RSystem) || sf::Keyboard::isKeyPressed(sf::Keyboard::RSystem);
+	
 	mouseLDwn=sf::Mouse::isButtonPressed(sf::Mouse::Left);
 	mouseRDwn=sf::Mouse::isButtonPressed(sf::Mouse::Right);
 	mouseMDwn=sf::Mouse::isButtonPressed(sf::Mouse::Middle);
 	
-	mouseLocDlta.x=mouseVctr.x-windowVctr.x-mouseLoc.x;
-	mouseLocDlta.y=dim.y-mouseVctr.y+windowVctr.y-mouseLoc.y;
+	mouseLocDlta.x=mouseVctr.x-windowVctr.x-mouseLocation.x;
+	mouseLocDlta.y=dim.y-mouseVctr.y+windowVctr.y-mouseLocation.y;
 	
-	mouseLoc.x=mouseVctr.x-windowVctr.x;
-	mouseLoc.y=dim.y-mouseVctr.y+windowVctr.y;
+	mouseLocation.x=mouseVctr.x-windowVctr.x;
+	mouseLocation.y=dim.y-mouseVctr.y+windowVctr.y;
 }
 
 void WidapSfmlWindow::windowResize()

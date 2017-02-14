@@ -16,7 +16,6 @@ public:
 	double checkTime(); //updates and returns time as a double
 	
 	void update(bool reset=0); //updates lastCheck to the current time
-	void reset() {baseTime=lastCheck;} //resets base to lastCheck (note: does not update)
 	
 private:
 	timespec baseTime;
